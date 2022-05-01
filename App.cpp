@@ -82,7 +82,7 @@ bool App::onInit() {
 
     // create new board and ai
     board = new Board(renderer);
-    ai = new AI(AI_ID, 10);
+    ai = new AI(AI_ID);
 
     // load media
     if (!loadMedia()) return false;
@@ -102,22 +102,19 @@ bool App::loadMedia()
 
 // function for handling events
 void App::onEvent(SDL_Event* event) 
-{
-    // stop running if the event type is quit
-    if (event->type == SDL_QUIT) 
-    {
-        running = false;
-    } 
+{  
     // check if the event type is mouse button down and the game is playing and it's not the ai's turn
-    else if (event->type == SDL_MOUSEBUTTONDOWN && state == PLAY && (!versusAI || turn != AI_ID)) 
-    {
-        // get x and y in grid based on mouse
-        int x = event->button.x / (S_WIDTH / 3);
-        int y = event->button.y / (S_HEIGHT / 3);
+    if (event->type == SDL_MOUSEBUTTONDOWN) {
+        if (state == PLAY && (!versusAI || board->getTurn() != AI_ID)) 
+        {
+            // get x and y in grid based on mouse
+            int x = event->button.x / (S_WIDTH / 3);
+            int y = event->button.y / (S_HEIGHT / 3);
 
-        // make that move
-        move(x, y);
-    } 
+            // make that move
+            move(x, y);
+        }
+    }
     // if the user presses a key after the game has ended
     else if (event->type == SDL_KEYDOWN && state == STOP) 
     {
@@ -125,8 +122,7 @@ void App::onEvent(SDL_Event* event)
         if (event->key.keysym.sym == SDLK_SPACE) 
         {
             // restart game
-            board->resetGrid();
-            turn = X_ID;
+            board->restartGame();
             state = PLAY;
         }
     }
@@ -135,7 +131,7 @@ void App::onEvent(SDL_Event* event)
 // loop for handling the game other than events and rendering
 void App::onLoop()
 {
-    if (state == PLAY && turn == AI_ID && versusAI)
+    if (state == PLAY && board->getTurn() == AI_ID && versusAI)
     {
         auto start = std::chrono::system_clock::now();
 
@@ -147,9 +143,10 @@ void App::onLoop()
 
         auto end = std::chrono::system_clock::now();
         std::chrono::duration<double> timePassed = end - start;
+        std::cout << "Move: " << aiMove.x << ", " << aiMove.y << "\n";
         std::cout << "Time needed: " << timePassed.count() << "s\n";
         std::cout << "Nodes searched: " << ai->nodes << "\n";
-        std::cout << "NPS: " << ai->nodes / timePassed.count() << "\n";
+        std::cout << "\n";
 
         move(aiMove.x, aiMove.y);
     }
@@ -187,10 +184,9 @@ void App::move(int x, int y)
 {
     if (!board->isTaken(x, y)) 
     {
-        board->replace(turn, x, y);
-        turn = 3 - turn;
+        board->makeMove(x, y);
 
-        if (board->checkWin(true) != 0 || board->isDraw()) 
+        if (board->checkWin(true) != EMPTY || board->isDraw()) 
         {
             state = STOP;
         }

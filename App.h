@@ -34,9 +34,8 @@ class App
         AI* ai = nullptr;
 
         // initialize ai and state variables
-        int AI_ID = O_ID;
+        int AI_ID = X_ID;
         bool versusAI = true;
-        int turn = X_ID;
         int state = PLAY;
 
         // event functions

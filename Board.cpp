@@ -6,26 +6,33 @@ Board::Board(SDL_Renderer* appRenderer)
 {
 	renderer = appRenderer;
 
-	// create a 3x3 vector filled with 0
-	resetGrid();
+	restartGame();
 }
 
-// replace cell with an id
-void Board::replace(int id, int x, int y)
+// make a move
+void Board::makeMove(int x, int y)
 {
-	grid[x][y] = id;
+	grid[x][y] = turn;
+	turn = (turn == X_ID) ? O_ID : X_ID;
+}
+
+// unmake a move
+void Board::unmakeMove(int x, int y)
+{
+	turn = (turn == X_ID) ? O_ID : X_ID;
+	grid[x][y] = EMPTY;
 }
 
 // return if cell is taken
 bool Board::isTaken(int x, int y) 
 {
-	return grid[x][y] != 0;
+	return grid[x][y] != EMPTY;
 }
 
 // return if all numbers are equal and not empty
 bool Board::equals3(int a, int b, int c) 
 {
-	return a == b && b == c && a > 0;
+	return a == b && b == c && a != EMPTY;
 }
 
 // check for a win
@@ -90,8 +97,8 @@ int Board::checkWin(bool save)
 		return grid[0][2];
 	}
 
-	// return 0 if no one won
-	return 0;
+	// return empty if no one won
+	return EMPTY;
 }
 
 // check if board is a draw
@@ -103,7 +110,7 @@ bool Board::isDraw()
 		for (int y = 0; y < 3; y++)
 		{
 			// if cell is empty, return that it isn't a draw
-			if (grid[x][y] == 0) 
+			if (grid[x][y] == EMPTY) 
 			{
 				return false;
 			}
@@ -115,14 +122,16 @@ bool Board::isDraw()
 }
 
 // reset the grid
-void Board::resetGrid()
+void Board::restartGame()
 {
+	turn = X_ID;
+
 	// set all cells to 0
 	for (int i = 0; i < 3; i++)
 	{
 		for (int j = 0; j < 3; j++)
 		{
-			grid[i][j] = 0;
+			grid[i][j] = EMPTY;
 		}
 	}
 
@@ -213,4 +222,9 @@ void Board::cleanup()
 	verticalLineImage.free();
 	horizontalLineImage.free();
 	diagonalLineImage.free();
+}
+
+int Board::getTurn()
+{
+	return turn;
 }

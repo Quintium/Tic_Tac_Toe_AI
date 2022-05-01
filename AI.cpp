@@ -2,29 +2,22 @@
 #include "AI.h"
 
 // ai constructor
-AI::AI(int AI_ID, int AI_depth) 
+AI::AI(int AI_ID) 
 {
 	ID = AI_ID;
-	depthLimit = AI_depth;
 }
 
 // negamax/minimax algorithm
-int AI::negaMax(Board* board, int alpha, int beta, int depth, int turn) 
+int AI::negaMax(Board* board, int alpha, int beta, int ply) 
 {
 	nodes++;
 
 	// evaluate board
-	int boardScore = evaluate(board, turn);
-	if (boardScore != 2)
+	int boardScore = evaluate(board);
+	if (boardScore != UNDECIDED)
 	{
 		// if the game ended return the score
 		return boardScore;
-	}
-
-	// return if depth limit was reached
-	if (depth == 0) 
-	{
-		return 0;
 	}
 
 	// save the best score (for the ai) yet
@@ -39,9 +32,9 @@ int AI::negaMax(Board* board, int alpha, int beta, int depth, int turn)
 			if (!board->isTaken(x, y)) 
 			{
 				// check the score if this cell was replaced
-				board->replace(turn, x, y);
-				int score = -negaMax(board, -beta, -bestScore, depth - 1, 3 - turn);
-				board->replace(0, x, y);
+				board->makeMove(x, y);
+				int score = -negaMax(board, -beta, -bestScore, ply + 1);
+				board->unmakeMove(x, y);
 
 				// if the score is better for the ai
 				if (score > bestScore)
@@ -50,7 +43,7 @@ int AI::negaMax(Board* board, int alpha, int beta, int depth, int turn)
 					bestScore = score;
 
 					// if this is the original called function, set the best move
-					if (depth == depthLimit) 
+					if (ply == 0) 
 					{
 						bestMove = { x, y };
 					}
@@ -70,18 +63,18 @@ int AI::negaMax(Board* board, int alpha, int beta, int depth, int turn)
 }
 
 // evaluate board based on turn
-int AI::evaluate(Board* board, int eval_ID) 
+int AI::evaluate(Board* board) 
 {
 	int win = board->checkWin(false);
-	if (win == 0) 
+	if (win == EMPTY) 
 	{
-		// if no one won, return 0 if it's a draw, else return 2 for proceed
-		return board->isDraw() ? 0 : 2;
+		// return draw or undecided if there's no win
+		return board->isDraw() ? DRAW : UNDECIDED;
 	} 
 	else 
 	{
-		// if someone won, return 1 if id won, else return -1
-		return win == eval_ID ? 1 : -1;
+		// if opponent won, return loss
+		return LOSS;
 	}
 }
 
@@ -91,7 +84,7 @@ Move AI::getBestMove(Board* board)
 	nodes = 0;
 
 	// call the minimax/negamax algorithm
-	negaMax(board, -2, 2, depthLimit, ID);
+	negaMax(board, -2, 2, 0);
 
 	// return the best move
 	return bestMove;
