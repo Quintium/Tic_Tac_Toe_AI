@@ -9,10 +9,29 @@ Board::Board(SDL_Renderer* appRenderer)
 	restartGame();
 }
 
+// reset the grid
+void Board::restartGame()
+{
+	turn = X_ID;
+
+	// full bitboard for empty squares, empty bitboards for x and o squares
+	bitboards.resize(3);
+	bitboards[EMPTY] = (U16(1) << 9) - 1;
+	bitboards[X_ID] = 0;
+	bitboards[O_ID] = 0;
+
+	// reset win situation
+	winPosition = 0;
+}
+
 // make a move
 void Board::makeMove(int x, int y)
 {
-	grid[x][y] = turn;
+	// change empty and player bitboards at spot based on x and y
+	U16 spot = U16(1) << (x + y * 3);
+	bitboards[turn] ^= spot;
+	bitboards[EMPTY] ^= spot;
+
 	turn = (turn == X_ID) ? O_ID : X_ID;
 }
 
@@ -20,81 +39,87 @@ void Board::makeMove(int x, int y)
 void Board::unmakeMove(int x, int y)
 {
 	turn = (turn == X_ID) ? O_ID : X_ID;
-	grid[x][y] = EMPTY;
+
+    // change empty and player bitboards at spot based on x and y
+	U16 spot = U16(1) << (x + y * 3);
+	bitboards[turn] ^= spot;
+	bitboards[EMPTY] ^= spot;
 }
 
 // return if cell is taken
 bool Board::isTaken(int x, int y) 
 {
-	return grid[x][y] != EMPTY;
+	return (bitboards[EMPTY] & (U16(1) << (x + y * 3))) == 0;
 }
 
-// return if all numbers are equal and not empty
-bool Board::equals3(int a, int b, int c) 
+
+// efficient check for a win
+int Board::checkWin()
 {
-	return a == b && b == c && a != EMPTY;
+	// check if bitboards contain winning rows
+	U16 bbX = bitboards[X_ID];
+	if ((bbX & 448) == 448 || // 111000000
+		(bbX & 56) == 56 || // 000111000
+		(bbX & 7) == 7 || // 000000111
+		(bbX & 292) == 292 || // 100100100
+		(bbX & 146) == 146 || // 010010010
+		(bbX & 73) == 73 || // 001001001
+		(bbX & 273) == 273 || // 100010001
+		(bbX & 84) == 84)  // 001010100
+	{
+		return X_ID;
+	}
+
+	U16 bbO = bitboards[O_ID];
+	if ((bbO & 448) == 448 || // 111000000
+		(bbO & 56) == 56 || // 000111000
+		(bbO & 7) == 7 || // 000000111
+		(bbO & 292) == 292 || // 100100100
+		(bbO & 146) == 146 || // 010010010
+		(bbO & 73) == 73 || // 001001001
+		(bbO & 273) == 273 || // 100010001
+		(bbO & 84) == 84)  // 001010100
+	{
+		return O_ID;
+	}
+
+	return EMPTY;
 }
 
-// check for a win
-int Board::checkWin(bool save) 
+// check for a win and save winning row
+int Board::checkWinSave() 
 {
-	// loop through 3 rows
-	for (int row = 0; row < 3; row++) 
+	winPosition = 0;
+
+	// check if bitboards contain winning rows
+	U16 bbX = bitboards[X_ID];
+	if ((bbX & 448) == 448) winPosition = HORIZONTAL | ROW2; // 111000000
+	if ((bbX & 56) == 56) winPosition = HORIZONTAL | ROW1; // 000111000
+	if ((bbX & 7) == 7) winPosition = HORIZONTAL | ROW0; // 000000111
+	if ((bbX & 292) == 292) winPosition = VERTICAL | ROW2; // 100100100
+	if ((bbX & 146) == 146) winPosition = VERTICAL | ROW1; // 010010010
+	if ((bbX & 73) == 73) winPosition = VERTICAL | ROW0; // 001001001
+	if ((bbX & 273) == 273) winPosition = DIAGONAL | ROW0; // 100010001
+	if ((bbX & 84) == 84) winPosition = DIAGONAL | ROW1;  // 001010100
+
+	if (winPosition != 0)
 	{
-		// check if vertical row is equal
-		if (equals3(grid[row][0], grid[row][1], grid[row][2])) 
-		{
-			// save win situation if needed
-			if (save) 
-			{
-				winRow = row;
-				winPosition = VERTICAL;
-			}
-
-			// return the id of winner
-			return grid[row][0];
-		}
-
-		// check if horizontal row is equal
-		if (equals3(grid[0][row], grid[1][row], grid[2][row])) 
-		{
-			// save win situation if needed
-			if (save) {
-				winRow = row;
-				winPosition = HORIZONTAL;
-			}
-
-			// return the id of winner
-			return grid[0][row];
-		}
+		return X_ID;
 	}
 
-	// check if first diagonal is equal
-	if (equals3(grid[0][0], grid[1][1], grid[2][2])) 
+	U16 bbO = bitboards[O_ID];
+	if ((bbO & 448) == 448) winPosition = HORIZONTAL | ROW2; // 111000000
+	if ((bbO & 56) == 56) winPosition = HORIZONTAL | ROW1; // 000111000
+	if ((bbO & 7) == 7) winPosition = HORIZONTAL | ROW0; // 000000111
+	if ((bbO & 292) == 292) winPosition = VERTICAL | ROW2; // 100100100
+	if ((bbO & 146) == 146) winPosition = VERTICAL | ROW1; // 010010010
+	if ((bbO & 73) == 73) winPosition = VERTICAL | ROW0; // 001001001
+	if ((bbO & 273) == 273) winPosition = DIAGONAL | ROW0; // 100010001
+	if ((bbO & 84) == 84) winPosition = DIAGONAL | ROW1;  // 001010100
+
+	if (winPosition != 0)
 	{
-		// save win situation if needed
-		if (save)
-		{
-			winRow = 0;
-			winPosition = DIAGONAL;
-		}
-
-		// return the id of winner
-		return grid[0][0];
-	}
-
-	// check if second diagonal is equal
-	if (equals3(grid[0][2], grid[1][1], grid[2][0])) 
-	{
-		// save win situation if needed
-		if (save)
-		{
-			winRow = 1;
-			winPosition = DIAGONAL;
-		}
-
-		// return the id of winner
-		return grid[0][2];
+		return O_ID;
 	}
 
 	// return empty if no one won
@@ -104,40 +129,8 @@ int Board::checkWin(bool save)
 // check if board is a draw
 bool Board::isDraw()
 {
-	// loop through grid
-	for (int x = 0; x < 3; x++) 
-	{
-		for (int y = 0; y < 3; y++)
-		{
-			// if cell is empty, return that it isn't a draw
-			if (grid[x][y] == EMPTY) 
-			{
-				return false;
-			}
-		}
-	}
-
 	// if no cells are empty, return draw
-	return true;
-}
-
-// reset the grid
-void Board::restartGame()
-{
-	turn = X_ID;
-
-	// set all cells to 0
-	for (int i = 0; i < 3; i++)
-	{
-		for (int j = 0; j < 3; j++)
-		{
-			grid[i][j] = EMPTY;
-		}
-	}
-
-	// reset win situation
-	winPosition = 0;
-	winRow = 0;
+	return bitboards[EMPTY] == 0;
 }
 
 // load all media
@@ -176,11 +169,11 @@ void Board::render()
 			SDL_Rect imageRect = { thirdWidth * i, thirdHeight * j, thirdWidth, thirdHeight };
 
 			// render the image of the cell
-			if (grid[i][j] == X_ID)
+			if (bitboards[X_ID] & U16(1) << (i + j * 3))
 			{
 				xImage.render(&imageRect);
 			}
-			else if (grid[i][j] == O_ID)
+			else if (bitboards[O_ID] & U16(1) << (i + j * 3))
 			{
 				oImage.render(&imageRect);
 			}
@@ -190,14 +183,17 @@ void Board::render()
 	// if game is won by someone
 	if (winPosition != 0)
 	{
+		// convert win row flags to int
+		int winRow = winPosition & ROW0 ? 0 : (winPosition & ROW1 ? 1 : 2);
+
 		// if the win is horizontal, render horizontal line based on row
-		if (winPosition == HORIZONTAL)
+		if (winPosition & HORIZONTAL)
 		{
 			SDL_Rect lineRect = { 0, thirdHeight * winRow, S_WIDTH, thirdHeight };
 			horizontalLineImage.render(&lineRect);
 		}
 		// if the win is vertical, render vertical line based on row
-		else if (winPosition == VERTICAL)
+		else if (winPosition & VERTICAL)
 		{
 			SDL_Rect lineRect = { thirdWidth * winRow, 0, thirdWidth, S_HEIGHT };
 			verticalLineImage.render(&lineRect);

@@ -65,7 +65,7 @@ int AI::negaMax(Board* board, int alpha, int beta, int ply)
 // evaluate board based on turn
 int AI::evaluate(Board* board) 
 {
-	int win = board->checkWin(false);
+	int win = board->checkWin();
 	if (win == EMPTY) 
 	{
 		// return draw or undecided if there's no win

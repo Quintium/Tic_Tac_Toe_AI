@@ -146,6 +146,7 @@ void App::onLoop()
         std::cout << "Move: " << aiMove.x << ", " << aiMove.y << "\n";
         std::cout << "Time needed: " << timePassed.count() << "s\n";
         std::cout << "Nodes searched: " << ai->nodes << "\n";
+        std::cout << "NPS: " << ai->nodes / timePassed.count() << "\n";
         std::cout << "\n";
 
         move(aiMove.x, aiMove.y);
@@ -186,7 +187,7 @@ void App::move(int x, int y)
     {
         board->makeMove(x, y);
 
-        if (board->checkWin(true) != EMPTY || board->isDraw()) 
+        if (board->checkWinSave() != EMPTY || board->isDraw())
         {
             state = STOP;
         }

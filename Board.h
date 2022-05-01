@@ -4,29 +4,35 @@
 #include <iostream>
 #include "Texture.h"
 
+// rename unsigned short to U16 for bitboard
+typedef unsigned short U16;
+
 // ids for X and O
 enum IDs {
+	EMPTY,
 	X_ID,
-	O_ID,
-	EMPTY
+	O_ID
 };
 
 // flags for winning position
 enum WinFlags
 {
-	HORIZONTAL,
-	VERTICAL,
-	DIAGONAL
+	HORIZONTAL = 1,
+	VERTICAL = 2,
+	DIAGONAL = 4,
+	ROW0 = 8,
+	ROW1 = 16,
+	ROW2 = 32
 };
+
+#include <vector>
 
 // class for the board
 class Board
 {
 	private:
-		// grid
-		int grid[3][3];
-
 		// board state
+		std::vector<U16> bitboards;
 		int turn;
 
 		// renderer and images
@@ -39,11 +45,7 @@ class Board
 		Texture diagonalLineImage;
 
 		// win situation
-		int winRow = 0;
 		int winPosition = 0;
-
-		// helper function for checking wins
-		bool equals3(int a, int b, int c);
 		
 	public:
 		// constructor
@@ -55,7 +57,8 @@ class Board
 		bool isTaken(int x, int y);
 
 		// checking for wins and draws
-		int checkWin(bool save);
+		int checkWin();
+		int checkWinSave();
 		bool isDraw();
 
 		// function for resetting the grid
